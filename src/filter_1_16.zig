@@ -12,6 +12,12 @@ const common = @import("filter_common.zig");
 const findCloseStructure = common.findCloseStructure;
 pub const FindSeedResults = common.FindSeedResults;
 
+pub const interface: common.Filter = .{
+    .findSeed = &findSeed,
+    .isValidSeed = &isValidSeed,
+    .isValidStructureSeed = &isValidStructureSeed,
+};
+
 pub const StructureSeedCheckResult = struct {
     successful: bool,
     bt_pos: Pos,
@@ -23,17 +29,11 @@ const FAIL_RESULT: StructureSeedCheckResult = .{
     .ravine_pos = undefined,
 };
 
-fn checkLower48(seed: u64) !StructureSeedCheckResult {
+fn checkLower48(seed: u64) StructureSeedCheckResult {
     const origin: Pos = .{ .x = 0, .z = 0 };
-    const bastion_pos = findCloseStructure(origin, seed, 64, cubiomes.Bastion, cubiomes.MC_1_16_1) catch |err| switch (err) {
-        error.FailedToFindStructure => return FAIL_RESULT,
-        else => return err,
-    };
+    const bastion_pos = findCloseStructure(origin, seed, 64, cubiomes.Bastion, cubiomes.MC_1_16_1) catch return FAIL_RESULT;
 
-    const fortress_pos = findCloseStructure(origin, seed, 150, cubiomes.Fortress, cubiomes.MC_1_16_1) catch |err| switch (err) {
-        error.FailedToFindStructure => return FAIL_RESULT,
-        else => return err,
-    };
+    const fortress_pos = findCloseStructure(origin, seed, 150, cubiomes.Fortress, cubiomes.MC_1_16_1) catch return FAIL_RESULT;
 
     var generator: Generator = undefined;
     cubiomes.setupGenerator(&generator, cubiomes.MC_1_16_1, 0);
@@ -75,14 +75,18 @@ fn checkLower48(seed: u64) !StructureSeedCheckResult {
                 if (distX > 60 or distZ > 60) continue;
                 if (distX < 25 and distZ < 25) continue;
 
-                return .{ .successful = true, .bt_pos = bt_pos, .ravine_pos = .{ .x = @intFromFloat(r.x), .z = @intFromFloat(r.z) } };
+                return .{
+                    .successful = true,
+                    .bt_pos = bt_pos,
+                    .ravine_pos = .{ .x = @intFromFloat(r.x), .z = @intFromFloat(r.z) },
+                };
             }
         }
     }
     return FAIL_RESULT;
 }
 
-fn checkSister(seed: u64, ssr: StructureSeedCheckResult) !bool {
+fn checkSister(seed: u64, ssr: StructureSeedCheckResult) bool {
     const bt_pos = ssr.bt_pos;
     const ravine_pos = ssr.ravine_pos;
 
@@ -117,7 +121,7 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult) !bool {
 
     // Check forest size
     var biome_cache: [1681]c_int = std.mem.zeroes([1681]c_int);
-    if (0 != cubiomes.genBiomes(&g, &biome_cache, .{ .scale = 1, .x = fx - 20, .z = fz - 20, .sx = 41, .sz = 41, .y = 255, .sy = 1 })) return error.FailedToGenerateBiomes;
+    if (0 != cubiomes.genBiomes(&g, &biome_cache, .{ .scale = 1, .x = fx - 20, .z = fz - 20, .sx = 41, .sz = 41, .y = 255, .sy = 1 })) return false;
 
     var t: u9 = 0;
     for (biome_cache) |i| {
@@ -189,7 +193,7 @@ fn isGoodBTLoot(seed: u64, x: c_int, z: c_int) bool {
     return true;
 }
 
-pub fn findSeed(init_seed: u64) !FindSeedResults {
+fn findSeed(init_seed: u64) FindSeedResults {
     const start_lower_48: u48 = @truncate(init_seed);
     const start_upper_16: u16 = @truncate(init_seed >> 48);
 
@@ -198,7 +202,7 @@ pub fn findSeed(init_seed: u64) !FindSeedResults {
     while (lower_48_checks < 0x1000000000000) {
         lower_48_checks += 1;
         lower_48 +%= 1; // +%= means Addition with wrapping
-        const ssr = try checkLower48(@intCast(lower_48));
+        const ssr = checkLower48(@intCast(lower_48));
         if (!ssr.successful) continue;
 
         var upper_16_checks: u32 = 0;
@@ -207,11 +211,21 @@ pub fn findSeed(init_seed: u64) !FindSeedResults {
             upper_16_checks += 1;
             upper_16 +%= 1;
             const seed = @as(u64, lower_48) | (@as(u64, upper_16) << 48);
-            if (!try checkSister(seed, ssr)) continue;
+            if (!checkSister(seed, ssr)) continue;
             const out: FindSeedResults = .{ .seed = seed, .lower_48_checks = lower_48_checks, .sister_checks = upper_16_checks };
             return out;
         }
     }
 
-    return error.SeedNotFound;
+    @panic("Filter is way too heavy! No seed found!");
+}
+
+fn isValidSeed(seed: u64) bool {
+    const ssr = checkLower48(seed);
+    if (!ssr.successful) return false;
+    return checkSister(seed, ssr);
+}
+
+fn isValidStructureSeed(seed: u64) bool {
+    return checkLower48(seed).successful;
 }

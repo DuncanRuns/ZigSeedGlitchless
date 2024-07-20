@@ -15,6 +15,12 @@ pub const FindSeedResults = struct {
     sister_checks: u32,
 };
 
+pub const Filter = struct {
+    findSeed: *const fn (init_seed: u64) FindSeedResults,
+    isValidSeed: *const fn (seed: u64) bool,
+    isValidStructureSeed: *const fn (seed: u64) bool,
+};
+
 pub fn findCloseStructure(pos: Pos, seed: u64, search_range: i32, structure_type: c_int, mc_version: c_int) !Pos {
     const chunk_pos: Pos = .{ .x = pos.x >> 4, .z = pos.z >> 4 };
     const chunk_x: i32 = chunk_pos.x;

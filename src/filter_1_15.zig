@@ -6,14 +6,24 @@ const Pos = cubiomes.Pos;
 const Generator = cubiomes.Generator;
 const MC_VER = cubiomes.MC_1_15_2;
 
+const ravines = @import("ravines");
+const RavineGenerator = ravines.RavineGenerator;
+
 const common = @import("filter_common.zig");
 pub const FindSeedResults = common.FindSeedResults;
 
-pub const StructureSeedCheckResult = struct {
+pub const interface: common.Filter = .{
+    .findSeed = &findSeed,
+    .isValidSeed = &isValidSeed,
+    .isValidStructureSeed = &isValidStructureSeed,
+};
+
+const StructureSeedCheckResult = struct {
     successful: bool,
     shipwreck_pos: Pos,
     monument_pos: Pos,
     village_pos: Pos,
+    ravine_pos: Pos,
 };
 
 const FAIL_RESULT: StructureSeedCheckResult = .{
@@ -21,6 +31,7 @@ const FAIL_RESULT: StructureSeedCheckResult = .{
     .shipwreck_pos = undefined,
     .monument_pos = undefined,
     .village_pos = undefined,
+    .ravine_pos = undefined,
 };
 
 fn checkLower48(seed: u64) StructureSeedCheckResult {
@@ -89,22 +100,57 @@ fn checkLower48(seed: u64) StructureSeedCheckResult {
     var village_pos: Pos = undefined;
     _ = cubiomes.getStructurePos(cubiomes.Village, MC_VER, seed, 1, 1, &village_pos); // Always succeeds
 
-    if (@abs(@divFloor(village_pos.x, 8) - fortress_pos.x) > 60) return FAIL_RESULT;
-    if (@abs(@divFloor(village_pos.z, 8) - fortress_pos.z) > 60) return FAIL_RESULT;
+    if (@abs(@divFloor(monument_pos.x, 8) - fortress_pos.x) > 60) return FAIL_RESULT;
+    if (@abs(@divFloor(monument_pos.z, 8) - fortress_pos.z) > 60) return FAIL_RESULT;
 
-    return .{
-        .successful = true,
-        .shipwreck_pos = shipwreck_pos,
-        .monument_pos = monument_pos,
-        .village_pos = village_pos,
-    };
+    // if (true) {
+    //     return .{
+    //         .successful = true,
+    //         .shipwreck_pos = shipwreck_pos,
+    //         .monument_pos = monument_pos,
+    //         .village_pos = village_pos,
+    //         .ravine_pos = .{ .x = 0, .z = 0 },
+    //     };
+    // }
+
+    // Ravine Checks
+    {
+        const monument_x_chunk: c_int = @divFloor(monument_pos.x, 16);
+        const monument_z_chunk: c_int = @divFloor(monument_pos.z, 16);
+        var x: c_int = monument_x_chunk - 5;
+        while (x <= monument_x_chunk + 1) : (x += 1) {
+            var z: c_int = monument_z_chunk - 5;
+            while (z <= monument_z_chunk + 1) : (z += 1) {
+                var r = ravines.initRavine(seed, x, z);
+                if (0 == r.canSpawn or r.verticalRadiusAtCenter < 18) continue;
+                ravines.simulateRavineToMiddle(&r);
+                if (r.lowerY > 8 or r.upperY < 40) continue;
+                if (r.x > @as(f64, @floatFromInt(monument_pos.x)) or r.z > @as(f64, @floatFromInt(monument_pos.z))) continue;
+
+                const distX: f64 = @abs(r.x - @as(f64, @floatFromInt(monument_pos.x)));
+                const distZ: f64 = @abs(r.z - @as(f64, @floatFromInt(monument_pos.z)));
+
+                if (distX > 64 or distZ > 64) continue;
+                if (distX < 16 and distZ < 16) continue;
+
+                return .{
+                    .successful = true,
+                    .shipwreck_pos = shipwreck_pos,
+                    .monument_pos = monument_pos,
+                    .village_pos = village_pos,
+                    .ravine_pos = .{ .x = @intFromFloat(r.x), .z = @intFromFloat(r.z) },
+                };
+            }
+        }
+    }
+    return FAIL_RESULT;
 }
 
 fn checkSister(seed: u64, ssr: StructureSeedCheckResult) bool {
     const shipwreck_pos = ssr.shipwreck_pos;
     const monument_pos = ssr.monument_pos;
     const village_pos = ssr.village_pos;
-    // const shipwreck_pos = ssr.shipwreck_pos;
+    const ravine_pos = ssr.ravine_pos;
 
     var g: Generator = undefined;
     cubiomes.setupGenerator(&g, MC_VER, 0);
@@ -117,6 +163,8 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult) bool {
     if (0 == cubiomes.isViableStructurePos(cubiomes.Monument, &g, monument_pos.x, monument_pos.z, 0)) return false;
     const village_biome = cubiomes.getBiomeAt(&g, 1, village_pos.x, 255, village_pos.z);
     if (cubiomes.savanna != village_biome) return false;
+    const ravine_biome = cubiomes.getBiomeAt(&g, 1, ravine_pos.x, 255, ravine_pos.z);
+    if (0 == cubiomes.isDeepOcean(ravine_biome)) return false;
 
     // Check spawn
     const spawn_pos: Pos = cubiomes.getSpawn(&g);
@@ -125,7 +173,31 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult) bool {
     return true;
 }
 
-pub fn findSeed(init_seed: u64) !FindSeedResults {
+fn checkSisterSuccesses(seed: u64, ssr: StructureSeedCheckResult) u32 {
+    const shipwreck_pos = ssr.shipwreck_pos;
+    const monument_pos = ssr.monument_pos;
+    const village_pos = ssr.village_pos;
+    const ravine_pos = ssr.ravine_pos;
+
+    var g: Generator = undefined;
+    cubiomes.setupGenerator(&g, MC_VER, 0);
+    cubiomes.applySeed(&g, cubiomes.DIM_OVERWORLD, seed);
+
+    var successes: u32 = 0;
+
+    if (0 != cubiomes.isOceanic(cubiomes.getBiomeAt(&g, 1, shipwreck_pos.x + 9, 127, shipwreck_pos.z + 9))) successes += 1;
+    if (0 != cubiomes.isViableStructurePos(cubiomes.Monument, &g, monument_pos.x, monument_pos.z, 0)) successes += 1;
+    if (cubiomes.savanna == cubiomes.getBiomeAt(&g, 1, village_pos.x, 255, village_pos.z)) successes += 1;
+    if (0 != cubiomes.isDeepOcean(cubiomes.getBiomeAt(&g, 1, ravine_pos.x, 255, ravine_pos.z))) successes += 1;
+
+    // Check spawn
+    const spawn_pos: Pos = cubiomes.getSpawn(&g);
+    if (!(@abs(spawn_pos.x - shipwreck_pos.x) > 30 or @abs(spawn_pos.z - shipwreck_pos.z) > 30)) successes += 1;
+
+    return successes;
+}
+
+fn findSeed(init_seed: u64) FindSeedResults {
     const start_lower_48: u48 = @truncate(init_seed);
     const start_upper_16: u16 = @truncate(init_seed >> 48);
 
@@ -139,7 +211,7 @@ pub fn findSeed(init_seed: u64) !FindSeedResults {
 
         var upper_16_checks: u32 = 0;
         var upper_16: u16 = start_upper_16;
-        while (upper_16_checks < 100) {
+        while (upper_16_checks < 200) {
             upper_16_checks += 1;
             upper_16 +%= 1;
             const seed = @as(u64, lower_48) | (@as(u64, upper_16) << 48);
@@ -149,5 +221,15 @@ pub fn findSeed(init_seed: u64) !FindSeedResults {
         }
     }
 
-    return error.SeedNotFound;
+    @panic("Filter is way too heavy! No seed found!");
+}
+
+fn isValidSeed(seed: u64) bool {
+    const ssr = checkLower48(seed);
+    if (!ssr.successful) return false;
+    return checkSister(seed, ssr);
+}
+
+fn isValidStructureSeed(seed: u64) bool {
+    return checkLower48(seed).successful;
 }

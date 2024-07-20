@@ -143,5 +143,5 @@ pub fn findSeed(init_seed: u64) !FindSeedResults {
         }
     }
 
-    return error.SeedNotFound;
+    @panic("Filter is way too heavy! No seed found!");
 }
