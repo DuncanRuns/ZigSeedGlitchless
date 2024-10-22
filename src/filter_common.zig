@@ -8,6 +8,7 @@ const Generator = cubiomes.Generator;
 pub const BURIED_TREASURE_SALT_1_16: u32 = 30001;
 pub const BURIED_TREASURE_SALT_1_15: u32 = 20002;
 pub const SHIPWRECK_SALT_1_15: u32 = 30005;
+pub const LAVA_LAKE_SALT_1_15: u32 = 10001;
 
 pub const FindSeedResults = struct {
     seed: u64,
@@ -333,4 +334,43 @@ pub fn getBTLoot(seed: u64, chunk_x: c_int, chunk_z: c_int, salt: u32) BuriedTre
     }
 
     return .{ .iron = iron, .tnt = tnt, .diamonds = diamonds, .gold = gold, .emeralds = emeralds };
+}
+
+pub const LavaLake = struct { x: c_int, y: c_int, z: c_int };
+
+pub fn getLavaLake(world_seed: u64, block_x: c_int, block_z: c_int, salt: u32) ?LavaLake {
+    var r: u64 = undefined;
+    cubiomes.setSeed(&r, getDecoratorSeed(world_seed, block_x, block_z, salt));
+    if (cubiomes.nextInt(&r, 8) != 0) return null;
+
+    const block_in_chunk_x = cubiomes.nextInt(&r, 16);
+    const block_in_chunk_z = cubiomes.nextInt(&r, 16);
+    const y = cubiomes.nextInt(&r, cubiomes.nextInt(&r, 248) + 8);
+    if (y < 63 or cubiomes.nextInt(&r, 10) == 0) {
+        return .{
+            .x = block_in_chunk_x + block_x,
+            .y = y,
+            .z = block_in_chunk_z + block_z,
+        };
+    }
+    return null;
+}
+
+// Slightly faster variation for only the more likely lakes
+pub fn getLavaLakeBelowSeaLevel(world_seed: u64, block_x: c_int, block_z: c_int, salt: u32) ?LavaLake {
+    var r: u64 = undefined;
+    cubiomes.setSeed(&r, getDecoratorSeed(world_seed, block_x, block_z, salt));
+    if (cubiomes.nextInt(&r, 8) != 0) return null;
+
+    const block_in_chunk_x = cubiomes.nextInt(&r, 16);
+    const block_in_chunk_z = cubiomes.nextInt(&r, 16);
+    const y = cubiomes.nextInt(&r, cubiomes.nextInt(&r, 248) + 8);
+    if (y < 63) {
+        return .{
+            .x = block_in_chunk_x + block_x,
+            .y = y,
+            .z = block_in_chunk_z + block_z,
+        };
+    }
+    return null;
 }

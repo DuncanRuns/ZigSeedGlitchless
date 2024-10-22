@@ -13,9 +13,15 @@ const findCloseStructure = common.findCloseStructure;
 pub const FindSeedResults = common.FindSeedResults;
 
 pub const interface: common.Filter = .{
-    .findSeed = &findSeed,
-    .isValidSeed = &isValidSeed,
-    .isValidStructureSeed = &isValidStructureSeed,
+    .findSeed = &findSeedRegular,
+    .isValidSeed = &isValidSeedRegular,
+    .isValidStructureSeed = &isValidStructureSeedRegular,
+};
+
+pub const interface_overpowered: common.Filter = .{
+    .findSeed = &findSeedOverpowered,
+    .isValidSeed = &isValidSeedOverpowered,
+    .isValidStructureSeed = &isValidStructureSeedOverpowered,
 };
 
 pub const StructureSeedCheckResult = struct {
@@ -29,11 +35,35 @@ const FAIL_RESULT: StructureSeedCheckResult = .{
     .ravine_pos = undefined,
 };
 
-fn checkLower48(seed: u64) StructureSeedCheckResult {
-    const origin: Pos = .{ .x = 0, .z = 0 };
-    const bastion_pos = findCloseStructure(origin, seed, 64, cubiomes.Bastion, cubiomes.MC_1_16_1) catch return FAIL_RESULT;
+const Filter116Settings = struct {
+    bt_dist: c_int,
+    ravine_dist: f64,
+    bastion_dist: c_int,
+    fortress_dist: c_int,
+    require_tnt: bool,
+};
 
-    const fortress_pos = findCloseStructure(origin, seed, 150, cubiomes.Fortress, cubiomes.MC_1_16_1) catch return FAIL_RESULT;
+const regular_settings: Filter116Settings = .{
+    .bt_dist = 32,
+    .ravine_dist = 80,
+    .bastion_dist = 96,
+    .fortress_dist = 256,
+    .require_tnt = false,
+};
+
+const overpowered_settings: Filter116Settings = .{
+    .bt_dist = 24,
+    .ravine_dist = 50,
+    .bastion_dist = 32,
+    .fortress_dist = 112,
+    .require_tnt = true,
+};
+
+fn checkLower48(seed: u64, settings: Filter116Settings) StructureSeedCheckResult {
+    const origin: Pos = .{ .x = 0, .z = 0 };
+    const bastion_pos = findCloseStructure(origin, seed, settings.bastion_dist, cubiomes.Bastion, cubiomes.MC_1_16_1) catch return FAIL_RESULT;
+
+    const fortress_pos = findCloseStructure(origin, seed, settings.fortress_dist, cubiomes.Fortress, cubiomes.MC_1_16_1) catch return FAIL_RESULT;
 
     var generator: Generator = undefined;
     cubiomes.setupGenerator(&generator, cubiomes.MC_1_16_1, 0);
@@ -49,7 +79,7 @@ fn checkLower48(seed: u64) StructureSeedCheckResult {
         outer: while (x <= 10) : (x += 1) {
             var z: c_int = -10;
             while (z <= 10) : (z += 1) {
-                bt_found = 0 != cubiomes.getStructurePos(cubiomes.Treasure, cubiomes.MC_1_16_1, seed, x, z, &bt_pos) and isGoodBTLoot(seed, x, z);
+                bt_found = 0 != cubiomes.getStructurePos(cubiomes.Treasure, cubiomes.MC_1_16_1, seed, x, z, &bt_pos) and isGoodBTLoot(seed, x, z, settings.require_tnt);
                 if (bt_found) break :outer;
             }
         }
@@ -72,7 +102,7 @@ fn checkLower48(seed: u64) StructureSeedCheckResult {
                 const distX: f64 = @abs(r.x - @as(f64, @floatFromInt(bt_pos.x)));
                 const distZ: f64 = @abs(r.z - @as(f64, @floatFromInt(bt_pos.z)));
 
-                if (distX > 60 or distZ > 60) continue;
+                if (distX > settings.ravine_dist or distZ > settings.ravine_dist) continue;
                 if (distX < 25 and distZ < 25) continue;
 
                 return .{
@@ -86,7 +116,7 @@ fn checkLower48(seed: u64) StructureSeedCheckResult {
     return FAIL_RESULT;
 }
 
-fn checkSister(seed: u64, ssr: StructureSeedCheckResult) bool {
+fn checkSister(seed: u64, ssr: StructureSeedCheckResult, settings: Filter116Settings) bool {
     const bt_pos = ssr.bt_pos;
     const ravine_pos = ssr.ravine_pos;
 
@@ -117,7 +147,7 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult) bool {
 
     // Check spawn
     const spawn_pos: Pos = cubiomes.getSpawn(&g);
-    if (@abs(spawn_pos.x - bt_pos.x) > 20 or @abs(spawn_pos.z - bt_pos.z) > 20) return false;
+    if (@abs(spawn_pos.x - bt_pos.x) > settings.bt_dist or @abs(spawn_pos.z - bt_pos.z) > settings.bt_dist) return false;
 
     // Check forest size
     var biome_cache: [1681]c_int = std.mem.zeroes([1681]c_int);
@@ -134,8 +164,12 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult) bool {
     return false;
 }
 
-fn isGoodBTLoot(seed: u64, x: c_int, z: c_int) bool {
+fn isGoodBTLoot(seed: u64, x: c_int, z: c_int, require_tnt: bool) bool {
     var loot = common.getBTLoot(seed, x, z, common.BURIED_TREASURE_SALT_1_16);
+
+    if (require_tnt and loot.tnt == 0) {
+        return false;
+    }
 
     // Check iron for flint and steel
     if (loot.iron == 0) {
@@ -193,7 +227,7 @@ fn isGoodBTLoot(seed: u64, x: c_int, z: c_int) bool {
     return true;
 }
 
-fn findSeed(init_seed: u64) FindSeedResults {
+fn findSeed(init_seed: u64, settings: Filter116Settings) FindSeedResults {
     const start_lower_48: u48 = @truncate(init_seed);
     const start_upper_16: u16 = @truncate(init_seed >> 48);
 
@@ -202,7 +236,7 @@ fn findSeed(init_seed: u64) FindSeedResults {
     while (lower_48_checks < 0x1000000000000) {
         lower_48_checks += 1;
         lower_48 +%= 1; // +%= means Addition with wrapping
-        const ssr = checkLower48(@intCast(lower_48));
+        const ssr = checkLower48(@intCast(lower_48), settings);
         if (!ssr.successful) continue;
 
         var upper_16_checks: u32 = 0;
@@ -211,7 +245,7 @@ fn findSeed(init_seed: u64) FindSeedResults {
             upper_16_checks += 1;
             upper_16 +%= 1;
             const seed = @as(u64, lower_48) | (@as(u64, upper_16) << 48);
-            if (!checkSister(seed, ssr)) continue;
+            if (!checkSister(seed, ssr, settings)) continue;
             const out: FindSeedResults = .{ .seed = seed, .lower_48_checks = lower_48_checks, .sister_checks = upper_16_checks };
             return out;
         }
@@ -220,12 +254,30 @@ fn findSeed(init_seed: u64) FindSeedResults {
     @panic("Filter is way too heavy! No seed found!");
 }
 
-fn isValidSeed(seed: u64) bool {
-    const ssr = checkLower48(seed);
-    if (!ssr.successful) return false;
-    return checkSister(seed, ssr);
+fn findSeedRegular(init_seed: u64) FindSeedResults {
+    return findSeed(init_seed, regular_settings);
 }
 
-fn isValidStructureSeed(seed: u64) bool {
-    return checkLower48(seed).successful;
+fn isValidSeedRegular(seed: u64) bool {
+    const ssr = checkLower48(seed, regular_settings);
+    if (!ssr.successful) return false;
+    return checkSister(seed, ssr, regular_settings);
+}
+
+fn isValidStructureSeedRegular(seed: u64) bool {
+    return checkLower48(seed, regular_settings).successful;
+}
+
+fn findSeedOverpowered(init_seed: u64) FindSeedResults {
+    return findSeed(init_seed, overpowered_settings);
+}
+
+fn isValidSeedOverpowered(seed: u64) bool {
+    const ssr = checkLower48(seed, overpowered_settings);
+    if (!ssr.successful) return false;
+    return checkSister(seed, ssr, overpowered_settings);
+}
+
+fn isValidStructureSeedOverpowered(seed: u64) bool {
+    return checkLower48(seed, overpowered_settings).successful;
 }
