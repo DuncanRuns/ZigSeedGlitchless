@@ -12,6 +12,8 @@ const common = @import("filter_common.zig");
 const findCloseStructure = common.findCloseStructure;
 pub const FindSeedResults = common.FindSeedResults;
 
+const bastion_checker = @import("bastion_checker.zig");
+
 pub const interface: common.Filter = .{
     .findSeed = &findSeedRegular,
     .isValidSeed = &isValidSeedRegular,
@@ -105,6 +107,10 @@ fn checkLower48(seed: u64, settings: Filter116Settings) StructureSeedCheckResult
                 if (distX > settings.ravine_dist or distZ > settings.ravine_dist) continue;
                 if (distX < 25 and distZ < 25) continue;
 
+                const obsidian = bastion_checker.getObsidianCount(seed, @truncate(@divFloor(bastion_pos.x, 16)), @truncate(@divFloor(bastion_pos.z, 16))) catch @panic("Can't run bastion checker!");
+                if (obsidian < 18) {
+                    return FAIL_RESULT;
+                }
                 return .{
                     .successful = true,
                     .bt_pos = bt_pos,
