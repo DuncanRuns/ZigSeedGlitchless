@@ -64,8 +64,7 @@ public class ZSGBastionChecker {
                 return validChestChecker.test(chestInfo);
             }).mapToInt(pair ->
                     pair.getSecond().stream().filter(itemStack -> itemStack.getItem().getName().equals("obsidian")).mapToInt(ItemStack::getCount).sum()
-            ).sum();
-            obsidian += obsidian + getExpectedTradedObsidian(bastionType);
+            ).sum() + getExpectedTradedObsidian(bastionType);
 
             byte[] bytes = {obsidian > Byte.MAX_VALUE ? Byte.MAX_VALUE : (byte) obsidian};
             System.out.write(bytes);
