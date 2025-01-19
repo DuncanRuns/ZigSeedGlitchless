@@ -3,12 +3,10 @@ const std = @import("std");
 threadlocal var started = false;
 threadlocal var bastion_checker_java_process: std.process.Child = undefined;
 
-var java_path_buffer: [512]u8 = undefined;
 var java_path: []u8 = undefined;
 
 pub fn setJavaPath(path: []u8) void {
-    std.mem.copyForwards(u8, &java_path_buffer, path);
-    java_path = java_path_buffer[0..path.len];
+    java_path = path;
 }
 
 pub fn getObsidianCount(world_seed: u64, chunk_x: i8, chunk_z: i8) !i8 {

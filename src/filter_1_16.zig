@@ -12,6 +12,7 @@ const common = @import("filter_common.zig");
 const findCloseStructure = common.findCloseStructure;
 pub const FindSeedResults = common.FindSeedResults;
 
+var enable_bastion_checker = false;
 const bastion_checker = @import("bastion_checker.zig");
 
 pub const interface: common.Filter = .{
@@ -88,38 +89,42 @@ fn checkLower48(seed: u64, settings: Filter116Settings) StructureSeedCheckResult
     }
     if (!bt_found) return FAIL_RESULT;
 
-    const btcx = @divFloor(bt_pos.x, 16);
-    const btcz = @divFloor(bt_pos.z, 16);
+    const bt_chunk_x = @divFloor(bt_pos.x, 16);
+    const bt_chunk_z = @divFloor(bt_pos.z, 16);
 
-    {
-        var x: c_int = btcx - 7;
-        while (x <= btcx + 7) : (x += 1) {
-            var z: c_int = btcz - 7;
-            while (z <= btcz + 7) : (z += 1) {
+    var ravine_pos: Pos = undefined;
+    ravine_block: {
+        var x: c_int = bt_chunk_x - 7;
+        while (x <= bt_chunk_x + 7) : (x += 1) {
+            var z: c_int = bt_chunk_z - 7;
+            while (z <= bt_chunk_z + 7) : (z += 1) {
                 var r: RavineGenerator = ravines.initRavine(seed, x, z);
                 if (0 == r.canSpawn or r.verticalRadiusAtCenter < 18) continue;
                 ravines.simulateRavineToMiddle(&r);
                 if (r.lowerY > 8 or r.upperY < 40) continue;
 
-                const distX: f64 = @abs(r.x - @as(f64, @floatFromInt(bt_pos.x)));
-                const distZ: f64 = @abs(r.z - @as(f64, @floatFromInt(bt_pos.z)));
+                const dx: f64 = @abs(r.x - @as(f64, @floatFromInt(bt_pos.x)));
+                const dz: f64 = @abs(r.z - @as(f64, @floatFromInt(bt_pos.z)));
 
-                if (distX > settings.ravine_dist or distZ > settings.ravine_dist) continue;
-                if (distX < 25 and distZ < 25) continue;
-
-                const obsidian = bastion_checker.getObsidianCount(seed, @truncate(@divFloor(bastion_pos.x, 16)), @truncate(@divFloor(bastion_pos.z, 16))) catch @panic("Can't run bastion checker!");
-                if (obsidian < 20) {
-                    return FAIL_RESULT;
-                }
-                return .{
-                    .successful = true,
-                    .bt_pos = bt_pos,
-                    .ravine_pos = .{ .x = @intFromFloat(r.x), .z = @intFromFloat(r.z) },
-                };
+                if (dx > settings.ravine_dist or dz > settings.ravine_dist) continue;
+                if (dx < 25 and dz < 25) continue;
+                ravine_pos = .{ .x = @intFromFloat(r.x), .z = @intFromFloat(r.z) };
+                break :ravine_block;
             }
         }
+        return FAIL_RESULT;
     }
-    return FAIL_RESULT;
+
+    if (enable_bastion_checker) {
+        const obsidian = bastion_checker.getObsidianCount(seed, @truncate(@divFloor(bastion_pos.x, 16)), @truncate(@divFloor(bastion_pos.z, 16))) catch @panic("Can't run bastion checker!");
+        if (obsidian < 20) return FAIL_RESULT;
+    }
+
+    return .{
+        .successful = true,
+        .bt_pos = bt_pos,
+        .ravine_pos = ravine_pos,
+    };
 }
 
 fn checkSister(seed: u64, ssr: StructureSeedCheckResult, settings: Filter116Settings) bool {
@@ -170,10 +175,10 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult, settings: Filter116Sett
     return false;
 }
 
-fn isGoodBTLoot(seed: u64, x: c_int, z: c_int, require_tnt: bool) bool {
+fn isGoodBTLoot(seed: u64, x: c_int, z: c_int, require_2_tnt: bool) bool {
     var loot = common.getBTLoot(seed, x, z, common.BURIED_TREASURE_SALT_1_16);
 
-    if (require_tnt and loot.tnt == 0) {
+    if (require_2_tnt and loot.tnt < 2) {
         return false;
     }
 
@@ -231,6 +236,10 @@ fn isGoodBTLoot(seed: u64, x: c_int, z: c_int, require_tnt: bool) bool {
     }
 
     return true;
+}
+
+pub fn setBastionCheckerEnabled(enabled: bool) void {
+    enable_bastion_checker = enabled;
 }
 
 fn findSeed(init_seed: u64, settings: Filter116Settings) FindSeedResults {

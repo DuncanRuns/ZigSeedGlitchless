@@ -21,7 +21,7 @@ public class ZSGBastionChecker {
     static {
         TYPE_TO_VALID_CHEST_CHECKER.put(BastionType.TREASURE, c -> c.y == 82);
         TYPE_TO_VALID_CHEST_CHECKER.put(BastionType.BRIDGE, c -> true);
-        TYPE_TO_VALID_CHEST_CHECKER.put(BastionType.STABLES, c -> c.y == 35 || c.y == 58 || c.y == 72);
+        TYPE_TO_VALID_CHEST_CHECKER.put(BastionType.STABLES, c -> c.y == 35 || c.y == 72);
         TYPE_TO_VALID_CHEST_CHECKER.put(BastionType.HOUSING, c -> {
             if (c.y == 73) return true;
             if (c.y == 36) {
