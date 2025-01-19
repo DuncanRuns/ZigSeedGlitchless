@@ -1,0 +1,6 @@
+
+/BastionChecker/.gradle
+/BastionChecker/build
+*.iml
+*.iws
+*.ipr

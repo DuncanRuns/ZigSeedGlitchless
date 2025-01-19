@@ -16,7 +16,7 @@ pub fn getObsidianCount(world_seed: u64, chunk_x: i8, chunk_z: i8) !i8 {
     if (!started) {
         const allocator = std.heap.page_allocator;
         bastion_checker_java_process = std.process.Child.init(
-            &[_][]const u8{ java_path, "-jar", "ZSGBastionChecker-1.1.0.jar" },
+            &[_][]const u8{ java_path, "-jar", "ZSGBastionChecker-1.2.0.jar" },
             allocator,
         );
         bastion_checker_java_process.stdin_behavior = .Pipe;

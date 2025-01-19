@@ -1,0 +1,60 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'maven-publish'
+    id 'idea'
+}
+
+group 'xyz.duncanruns.zsg.bastionchecker'
+version '1.2.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://maven.seedfinding.com"
+    }
+    maven {
+        url "https://maven.latticg.com/"
+    }
+    maven {
+        url "https://www.jitpack.io"
+    }
+}
+
+dependencies {
+
+    implementation('com.seedfinding:mc_math:1.171.0') { transitive = false }
+    implementation('com.seedfinding:mc_seed:1.171.1') { transitive = false }
+    implementation('com.seedfinding:mc_core:1.200.1') { transitive = false }
+    implementation('com.seedfinding:mc_noise:1.171.1') { transitive = false }
+
+    implementation('com.seedfinding:mc_biome:1.171.1') { transitive = false }
+    implementation('com.seedfinding:mc_terrain:1.171.1') { transitive = false }
+
+    implementation('com.seedfinding:mc_reversal:1.171.1') { transitive = false }
+    implementation('com.seedfinding:mc_feature:1.171.9') { transitive = false }
+
+    implementation('com.github.DuncanRuns:BastionGenerator:9cccd19863') { transitive = false }
+}
+
+jar {
+
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+
+    manifest {
+        // Thanks to answers from this: https://stackoverflow.com/questions/33020069/how-to-get-version-attribute-from-a-gradle-build-to-be-included-in-runtime-swing
+        attributes 'Main-Class': 'xyz.duncanruns.zsg.bastionchecker.ZSGBastionChecker',
+                'Multi-Release': true
+    }
+
+    exclude "xyz/duncanruns/zsg/bastionchecker/ZSGBastionCheckerTest*.class"
+
+    from {
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}

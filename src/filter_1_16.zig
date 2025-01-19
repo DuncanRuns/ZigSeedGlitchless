@@ -108,7 +108,7 @@ fn checkLower48(seed: u64, settings: Filter116Settings) StructureSeedCheckResult
                 if (distX < 25 and distZ < 25) continue;
 
                 const obsidian = bastion_checker.getObsidianCount(seed, @truncate(@divFloor(bastion_pos.x, 16)), @truncate(@divFloor(bastion_pos.z, 16))) catch @panic("Can't run bastion checker!");
-                if (obsidian < 18) {
+                if (obsidian < 20) {
                     return FAIL_RESULT;
                 }
                 return .{
