@@ -45,7 +45,7 @@ public class ZSGBastionCheckerTest {
         ChestInfo chestInfo = new ChestInfo();
         Map<BastionType, List<Integer>> data = new HashMap<>();
         for (BastionType bastionType : BastionType.values()) data.put(bastionType, new ArrayList<>());
-        int totalCheckedSeeds = 100000;
+        int totalCheckedSeeds = 1000000;
         for (long seed = 0; seed < totalCheckedSeeds; seed++) {
             byte b1 = 0;
             byte b2 = 0;
@@ -78,7 +78,7 @@ public class ZSGBastionCheckerTest {
             System.out.println(bastionType);
             int expectedTradedObsidian = getExpectedTradedObsidian(bastionType);
             List<Integer> raw = data.get(bastionType);
-            long oldCount = raw.stream().mapToInt(Integer::intValue).filter(i -> i >= 18).count();
+//            long oldCount = raw.stream().mapToInt(Integer::intValue).filter(i -> i >= 18).count();
 //            System.out.println(String.format(">=18 in relevant chests: %d (%.2f", oldCount, percentOf(oldCount, oldTotal)) + "%)");
             long newCount = raw.stream().mapToInt(i -> expectedTradedObsidian + i).filter(i -> i >= 20).count();
             System.out.println(String.format("%d (%.2f", newCount, percentOf(newCount, newTotal)) + "% of good bastions)");
