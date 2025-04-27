@@ -5,8 +5,8 @@ plugins {
     id 'idea'
 }
 
-group 'xyz.duncanruns.zsg.bastionchecker'
-version '1.2.0'
+group 'xyz.duncanruns.zsg.javabits'
+version '2.0.0'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -48,11 +48,11 @@ jar {
 
     manifest {
         // Thanks to answers from this: https://stackoverflow.com/questions/33020069/how-to-get-version-attribute-from-a-gradle-build-to-be-included-in-runtime-swing
-        attributes 'Main-Class': 'xyz.duncanruns.zsg.bastionchecker.ZSGBastionChecker',
+        attributes 'Main-Class': 'xyz.duncanruns.zsg.javabits.ZSGJavaBits',
                 'Multi-Release': true
     }
 
-    exclude "xyz/duncanruns/zsg/bastionchecker/ZSGBastionCheckerTest*.class"
+    exclude "xyz/duncanruns/zsg/javabits/ZSGJavaBitsTest*.class"
 
     from {
         configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }

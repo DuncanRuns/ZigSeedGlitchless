@@ -98,6 +98,15 @@ fn checkLower48(seed: u64) StructureSeedCheckResult {
     var village_pos: Pos = undefined;
     _ = cubiomes.getStructurePos(cubiomes.Village, MC_VER, seed, 1, 1, &village_pos); // Always succeeds
 
+    // if (common.getLavaLakeBelowSeaLevel(seed, village_pos.x + 16, village_pos.z + 16, common.LAVA_LAKE_SALT_1_15)) |lake| {
+    //     // std.debug.print("{d}\n", .{lake.y});
+    //     if (lake.y < 22) {
+    //         return FAIL_RESULT;
+    //     }
+    // } else {
+    //     return FAIL_RESULT;
+    // }
+
     if (@abs(@divFloor(monument_pos.x, 8) - fortress_pos.x) > 60) return FAIL_RESULT;
     if (@abs(@divFloor(monument_pos.z, 8) - fortress_pos.z) > 60) return FAIL_RESULT;
 

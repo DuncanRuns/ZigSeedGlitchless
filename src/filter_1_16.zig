@@ -13,7 +13,8 @@ const findCloseStructure = common.findCloseStructure;
 pub const FindSeedResults = common.FindSeedResults;
 
 var enable_bastion_checker = false;
-const bastion_checker = @import("bastion_checker.zig");
+var enable_terrain_checker = false;
+const java_bits = @import("java_bits.zig");
 
 pub const interface: common.Filter = .{
     .findSeed = &findSeedRegular,
@@ -116,8 +117,16 @@ fn checkLower48(seed: u64, settings: Filter116Settings) StructureSeedCheckResult
     }
 
     if (enable_bastion_checker) {
-        const obsidian = bastion_checker.getObsidianCount(seed, @truncate(@divFloor(bastion_pos.x, 16)), @truncate(@divFloor(bastion_pos.z, 16))) catch @panic("Can't run bastion checker!");
+        const obsidian = java_bits.getObsidianCount(seed, @truncate(@divFloor(bastion_pos.x, 16)), @truncate(@divFloor(bastion_pos.z, 16))) catch @panic("Can't run bastion checker!");
         if (obsidian < 20) return FAIL_RESULT;
+    }
+
+    if (enable_terrain_checker) {
+        const bx: i8 = @truncate(@divFloor(bastion_pos.x, 16));
+        const bz: i8 = @truncate(@divFloor(bastion_pos.z, 16));
+        const fx: i8 = @truncate(@divFloor(fortress_pos.x, 16));
+        const fz: i8 = @truncate(@divFloor(fortress_pos.z, 16));
+        if (!(java_bits.checkTerrain(seed, bx, bz, fx, fz) catch @panic("Can't run terrain checker!"))) return FAIL_RESULT;
     }
 
     return .{
@@ -238,8 +247,9 @@ fn isGoodBTLoot(seed: u64, x: c_int, z: c_int, require_2_tnt: bool) bool {
     return true;
 }
 
-pub fn setBastionCheckerEnabled(enabled: bool) void {
-    enable_bastion_checker = enabled;
+pub fn setFeatures(bastion_loot: bool, terrain: bool) void {
+    enable_bastion_checker = bastion_loot;
+    enable_terrain_checker = terrain;
 }
 
 fn findSeed(init_seed: u64, settings: Filter116Settings) FindSeedResults {
