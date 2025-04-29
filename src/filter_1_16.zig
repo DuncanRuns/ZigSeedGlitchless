@@ -266,7 +266,9 @@ fn findSeed(init_seed: u64, settings: Filter116Settings) FindSeedResults {
 
         var upper_16_checks: u32 = 0;
         var upper_16: u16 = start_upper_16;
-        while (upper_16_checks < 50) {
+        // Sister checking limit used to be way lower since finding a better sister set was more worth it.
+        // But now since the structure checks are so heavy, it's not worth it to skip any sister seeds.
+        while (upper_16_checks < 65536) {
             upper_16_checks += 1;
             upper_16 +%= 1;
             const seed = @as(u64, lower_48) | (@as(u64, upper_16) << 48);
