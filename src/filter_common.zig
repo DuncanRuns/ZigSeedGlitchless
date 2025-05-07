@@ -5,10 +5,13 @@ const cubiomes = @import("cubiomes");
 const Pos = cubiomes.Pos;
 const Generator = cubiomes.Generator;
 
+pub const DESERT_PYRAMID_SALT_1_16: u32 = 40003;
 pub const BURIED_TREASURE_SALT_1_16: u32 = 30001;
 pub const BURIED_TREASURE_SALT_1_15: u32 = 20002;
 pub const SHIPWRECK_SALT_1_15: u32 = 30005;
+pub const SHIPWRECK_SALT_1_16: u32 = 40006;
 pub const LAVA_LAKE_SALT_1_15: u32 = 10001;
+pub const DESERT_LAVA_LAKE_SALT_1_16: u32 = 10000;
 
 pub const FindSeedResults = struct {
     seed: u64,
@@ -20,6 +23,21 @@ pub const Filter = struct {
     findSeed: *const fn (init_seed: u64) FindSeedResults,
     isValidSeed: *const fn (seed: u64) bool,
     isValidStructureSeed: *const fn (seed: u64) bool,
+};
+
+pub const StructureVariantZig = extern struct {
+    flags: u8 = 0, // combines abandoned, giant, underground, airpocket, basement, cracked
+    size: u8 = 0,
+    start: u8 = 0,
+    biome: i16 = 0,
+    rotation: u8 = 0,
+    mirror: u8 = 0,
+    x: i16 = 0,
+    y: i16 = 0,
+    z: i16 = 0,
+    sx: i16 = 0,
+    sy: i16 = 0,
+    sz: i16 = 0,
 };
 
 pub fn findCloseStructure(pos: Pos, seed: u64, search_range: i32, structure_type: c_int, mc_version: c_int) !Pos {
@@ -104,20 +122,25 @@ pub fn getDecoratorSeed(world_seed: u64, block_x: c_int, block_z: c_int, salt: u
     return (populationSeed + salt) & 0xFFFFFFFFFFFF;
 }
 
-pub fn getLootSeed(seed: u64, block_x: c_int, block_z: c_int, salt: u32) u64 {
+pub fn getLootSeed(seed: u64, block_x: c_int, block_z: c_int, salt: u32, rng_trashing: u8) u64 {
     var rand: u64 = 0;
     cubiomes.setSeed(&rand, getDecoratorSeed(seed, block_x, block_z, salt));
+    var i = rng_trashing;
+    while (i > 0) : (i -= 1) {
+        _ = cubiomes.next(&rand, 32);
+        _ = cubiomes.next(&rand, 32);
+    }
     return cubiomes.nextLong(&rand);
 }
 
 /// chest_num is 1 for the first chest, 2 for the second chest, etc.
-/// chest_num <= 1 is equivalent to getLootSeed.
-pub fn getIndexedLootSeed(seed: u64, block_x: c_int, block_z: c_int, salt: u32, chest_num: u8) u64 {
+pub fn getIndexedLootSeed(seed: u64, block_x: c_int, block_z: c_int, salt: u32, chest_num: u8, rng_trashing: u8) u64 {
     var rand: u64 = 0;
     cubiomes.setSeed(&rand, getDecoratorSeed(seed, block_x, block_z, salt));
-    var i = chest_num;
+    var i = chest_num + rng_trashing;
     while (i > 1) : (i -= 1) {
-        _ = cubiomes.nextLong(&rand);
+        _ = cubiomes.next(&rand, 32);
+        _ = cubiomes.next(&rand, 32);
     }
     return cubiomes.nextLong(&rand);
 }
@@ -129,9 +152,9 @@ const ShipwreckTreasureLoot = struct {
     emeralds: i8,
 };
 
-pub fn getShipwreckTreasureLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32, chest_num: u8) ShipwreckTreasureLoot {
+pub fn getShipwreckTreasureLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32, chest_num: u8, rng_trashing: u8) ShipwreckTreasureLoot {
     var r: u64 = 0;
-    cubiomes.setSeed(&r, getIndexedLootSeed(seed, block_x, block_z, salt, chest_num));
+    cubiomes.setSeed(&r, getIndexedLootSeed(seed, block_x, block_z, salt, chest_num, rng_trashing));
     var iron: i8 = 0;
     var iron_nuggets: i8 = 0;
     var diamonds: i8 = 0;
@@ -184,17 +207,17 @@ const ShipwreckSupplyLoot = struct {
     gunpowder: i8,
     wheat: i16, // Can get up to 210 wheat so more space needed than i8
     carrots: i8,
-    rotten_flesh: i8,
+    rotten_flesh: i16,
 };
 
-pub fn getShipwreckSupplyLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32) ShipwreckSupplyLoot {
+pub fn getShipwreckSupplyLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32, rng_trashing: u8) ShipwreckSupplyLoot {
     var r: u64 = 0;
-    cubiomes.setSeed(&r, getLootSeed(seed, block_x, block_z, salt)); // chest_num always 1
+    cubiomes.setSeed(&r, getLootSeed(seed, block_x, block_z, salt, rng_trashing)); // chest_num always 1
     var tnt: i8 = 0;
     var gunpowder: i8 = 0;
     var wheat: i16 = 0;
     var carrots: i8 = 0;
-    var rotten_flesh: i8 = 0;
+    var rotten_flesh: i16 = 0;
 
     // Only 1 Pool (w77) 3-10 uni rolls
     // w8 1-12 paper
@@ -230,11 +253,7 @@ pub fn getShipwreckSupplyLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u
         } else if (choice < 46) {
             // std.debug.print("Stew\n", .{});
             // Discard effect calculation
-            _ = switch (cubiomes.nextInt(&r, 6)) {
-                0, 5 => cubiomes.nextInt(&r, 3),
-                4 => cubiomes.nextInt(&r, 11),
-                else => cubiomes.nextInt(&r, 4),
-            };
+            cubiomes.skipNextN(&r, 2);
         } else if (choice < 52) {
             // std.debug.print("Coal\n", .{});
             _ = cubiomes.nextInt(&r, 7);
@@ -294,7 +313,7 @@ const BuriedTreasureLoot = struct {
 
 pub fn getBTLoot(seed: u64, chunk_x: c_int, chunk_z: c_int, salt: u32) BuriedTreasureLoot {
     var rand: u64 = 0;
-    cubiomes.setSeed(&rand, getLootSeed(seed, chunk_x * 16, chunk_z * 16, salt));
+    cubiomes.setSeed(&rand, getLootSeed(seed, chunk_x * 16, chunk_z * 16, salt, 0));
     var iron: i8 = 0;
     var tnt: i8 = 0;
     var diamonds: i8 = 0;
@@ -336,9 +355,138 @@ pub fn getBTLoot(seed: u64, chunk_x: c_int, chunk_z: c_int, salt: u32) BuriedTre
     return .{ .iron = iron, .tnt = tnt, .diamonds = diamonds, .gold = gold, .emeralds = emeralds };
 }
 
-pub const LavaLake = struct { x: c_int, y: c_int, z: c_int };
+pub const DesertPyramidChestSeeds = struct {
+    chest1: u64,
+    chest2: u64,
+    chest3: u64,
+    chest4: u64,
+};
 
-pub fn getLavaLake(world_seed: u64, block_x: c_int, block_z: c_int, salt: u32) ?LavaLake {
+pub fn getDesertPyramidChestSeeds(seed: u64, block_x: c_int, block_z: c_int, salt: u32) DesertPyramidChestSeeds {
+    var rand: u64 = 0;
+    cubiomes.setSeed(&rand, getDecoratorSeed(seed, block_x, block_z, salt));
+    return .{
+        .chest1 = cubiomes.nextLong(&rand),
+        .chest2 = cubiomes.nextLong(&rand),
+        .chest3 = cubiomes.nextLong(&rand),
+        .chest4 = cubiomes.nextLong(&rand),
+    };
+}
+
+const DesertTempleLoot = struct {
+    diamonds: i8 = 0,
+    gold: i8 = 0,
+    iron: i8 = 0,
+    enchanted_golden_apples: i8 = 0,
+};
+
+pub fn getDesertPyramidLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32) DesertTempleLoot {
+    const seeds = getDesertPyramidChestSeeds(seed, block_x, block_z, salt);
+    var out: DesertTempleLoot = .{};
+    for ([_]u64{ seeds.chest1, seeds.chest2, seeds.chest3, seeds.chest4 }) |chest_seed| {
+        const loot = getDesertPyramidSingleChestLoot(chest_seed);
+        out.diamonds += loot.diamonds;
+        out.gold += loot.gold;
+        out.iron += loot.iron;
+        out.enchanted_golden_apples += loot.enchanted_golden_apples;
+    }
+    return out;
+}
+
+pub fn getDesertPyramidSingleChestLoot(chest_seed: u64) DesertTempleLoot {
+    var rand: u64 = 0;
+    cubiomes.setSeed(&rand, chest_seed);
+    // Pool 1 (w232): 2-4 uni rolls
+    // w5 1-3 diamond
+    // w15 1-5 iron_ingot
+    // w15 2-7 gold_ingot
+    // w15 1-3 emerald
+    // w25 4-6 bone
+    // w25 1-3 spider_eye
+    // w25 3-7 rotten_flesh
+    // w50 1 horse item
+    // w20 1 enchanted book
+    // w20 1 golden_apple
+    // w2 1 enchanted_golden_apple
+    // w15 nothing
+
+    var loot: DesertTempleLoot = .{};
+    {
+        const max = cubiomes.nextInt(&rand, 3) + 2;
+        var i: i32 = 0;
+        while (i < max) : (i += 1) {
+            const choice = cubiomes.nextInt(&rand, 232);
+            if (choice < 5) {
+                loot.diamonds += @truncate(cubiomes.nextInt(&rand, 3) + 1);
+            } else if (choice < 20) {
+                loot.iron += @truncate(cubiomes.nextInt(&rand, 5) + 1);
+            } else if (choice < 35) {
+                loot.gold += @truncate(cubiomes.nextInt(&rand, 6) + 2);
+            } else if (choice < 100) {
+                _ = cubiomes.nextInt(&rand, 3); // emerald, bone, spider_eye
+            } else if (choice < 125) {
+                _ = cubiomes.nextInt(&rand, 5); // rotten_flesh
+            } else if (choice < 175) {
+                // Horse item
+            } else if (choice < 195) {
+                // Enchanted book
+                // 37 possible enchants
+                // 0: protection, 4
+                // 1: fire_protection, 4
+                // 2: feather_falling, 4
+                // 3: blast_protection, 4
+                // 4: projectile_protection, 4
+                // 5: respiration, 3
+                // 6: aqua_affinity, 1
+                // 7: thorns, 3
+                // 8: depth_strider, 3
+                // 9: frost_walker, 2
+                // 10: binding_curse, 1
+                // 11: sharpness, 5
+                // 12: smite, 5
+                // 13: bane_of_arthropods, 5
+                // 14: knockback, 2
+                // 15: fire_aspect, 2
+                // 16: looting, 3
+                // 17: sweeping, 3
+                // 18: efficiency, 5
+                // 19: silk_touch, 1
+                // 20: unbreaking, 3
+                // 21: fortune, 3
+                // 22: power, 5
+                // 23: punch, 2
+                // 24: flame, 1
+                // 25: infinity, 1
+                // 26: luck_of_the_sea, 3
+                // 27: lure, 3
+                // 28: loyalty, 3
+                // 29: impaling, 5
+                // 30: riptide, 3
+                // 31: channeling, 1
+                // 32: multishot, 1
+                // 33: quick_charge, 3
+                // 34: piercing, 4
+                // 35: mending, 1
+                // 36: vanishing_curse, 1
+                const enchant = cubiomes.nextInt(&rand, 37);
+                switch (enchant) {
+                    23, 9, 14, 15 => _ = cubiomes.nextInt(&rand, 2),
+                    16, 17, 33, 20, 5, 21, 7, 8, 26, 27, 28, 30 => _ = cubiomes.nextInt(&rand, 3),
+                    0, 1, 2, 34, 3, 4 => _ = cubiomes.nextInt(&rand, 4),
+                    18, 22, 11, 12, 13, 29 => _ = cubiomes.nextInt(&rand, 5),
+                    else => {},
+                }
+            } else if (choice < 215) {
+                // golden_apple
+            } else if (choice < 217) {
+                loot.enchanted_golden_apples += 1;
+            } // else nothing
+        }
+    }
+    return loot;
+}
+
+pub fn getLavaLake(world_seed: u64, block_x: c_int, block_z: c_int, salt: u32) ?cubiomes.Pos3 {
     var r: u64 = undefined;
     cubiomes.setSeed(&r, getDecoratorSeed(world_seed, block_x, block_z, salt));
     if (cubiomes.nextInt(&r, 8) != 0) return null;
@@ -357,7 +505,7 @@ pub fn getLavaLake(world_seed: u64, block_x: c_int, block_z: c_int, salt: u32) ?
 }
 
 // Slightly faster variation for only the more likely lakes
-pub fn getLavaLakeBelowSeaLevel(world_seed: u64, block_x: c_int, block_z: c_int, salt: u32) ?LavaLake {
+pub fn getLavaLakeBelowSeaLevel(world_seed: u64, block_x: c_int, block_z: c_int, salt: u32) ?cubiomes.Pos3 {
     var r: u64 = undefined;
     cubiomes.setSeed(&r, getDecoratorSeed(world_seed, block_x, block_z, salt));
     if (cubiomes.nextInt(&r, 8) != 0) return null;

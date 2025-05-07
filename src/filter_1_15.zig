@@ -76,11 +76,11 @@ fn checkLower48(seed: u64) StructureSeedCheckResult {
             else => .{ .x = shipwreck_pos.x, .z = shipwreck_pos.z },
         };
 
-        const supply_loot = common.getShipwreckSupplyLoot(seed, supply_chest_pos.x, supply_chest_pos.z, common.SHIPWRECK_SALT_1_15);
+        const supply_loot = common.getShipwreckSupplyLoot(seed, supply_chest_pos.x, supply_chest_pos.z, common.SHIPWRECK_SALT_1_15, 0);
         if (supply_loot.gunpowder < 5 and supply_loot.tnt == 0) {
             return FAIL_RESULT;
         }
-        const treasure_loot = common.getShipwreckTreasureLoot(seed, treasure_chest_pos.x, treasure_chest_pos.z, common.SHIPWRECK_SALT_1_15, treasure_chest_num);
+        const treasure_loot = common.getShipwreckTreasureLoot(seed, treasure_chest_pos.x, treasure_chest_pos.z, common.SHIPWRECK_SALT_1_15, treasure_chest_num, 0);
         if (treasure_loot.iron < 7 and (treasure_loot.diamonds < 3 or treasure_loot.iron < 4) and (treasure_loot.diamonds < 1 or treasure_loot.iron < 6) and (treasure_loot.diamonds < 4 or treasure_loot.iron < 3)) {
             return FAIL_RESULT;
         }
