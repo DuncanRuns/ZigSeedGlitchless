@@ -6,19 +6,8 @@ Releases and some source code for ZigSeedGlitchless
 
 ## Filters
 
-### 1.16 Filter
+### 1.16 Nether (for all 1.16 filters)
 
--   BT within 10 chunks of 0,0.
-    -   Flint and steel craftable.
-    -   Pickaxe craftable (diamond or iron).
-    -   Bucket craftable.
-    -   Wood mineable (tnt w/ iron/gold pressure plate, or enough to craft iron/gold axe).
-    -   Gravel mineable (any type of shovel craftable or another tnt available).
-    -   OP version guarantees 2 TNT.
--   Spawnpoint within 32 blocks of bt (24 for OP version).
--   Forest within 10 blocks of bt.
-    -   At least 400 blocks of forest within 20 blocks of the found forest.
--   Ravine within 80 blocks of bt (50 for OP version).
 -   <=96 bastion (<=32 for OP version).
 -   <=256 fortress from bastion (<=112 for OP version).
 -   20 or more obsidian from 90% chance trades plus reasonable bastion chests.
@@ -36,7 +25,52 @@ Releases and some source code for ZigSeedGlitchless
     -   Checks for 80% air in a straight line between bastion and fortress at y=60, or y=95 if y=60 fails.
         -   If only y=95 is successful, also checks for 60% air between y=95 and y=50 at the starting piece of the fortress.
 
-### 1.15 Filter (not on leaderboard and it's kinda shit)
+### 1.16 Mapless
+
+-   BT within 10 chunks of 0,0.
+    -   Flint and steel craftable.
+    -   Pickaxe craftable (diamond or iron).
+    -   Bucket craftable.
+    -   Wood mineable (tnt w/ iron/gold pressure plate, or enough to craft iron/gold axe).
+    -   Gravel mineable (any type of shovel craftable or another tnt available).
+    -   OP version guarantees 2 TNT.
+-   Spawnpoint within 32 blocks of bt (24 for OP version).
+-   Forest within 10 blocks of bt.
+    -   At least 400 blocks of forest within 20 blocks of the found forest.
+-   Ravine within 80 blocks of bt (50 for OP version).
+
+### 1.16 Shipwreck
+
+-   Shipwreck in ++ region.
+    -   Only full upright shipwrecks (for guaranteed wood access).
+    -   Flint and steel craftable.
+    -   Pickaxe craftable (diamond or iron).
+    -   Bucket craftable.
+    -   5 carrots or 10 bread, or a combination.
+-   Spawnpoint within 48 blocks of shipwreck.
+-   Ravine within 80 blocks of shipwreck (50 for OP version).
+
+### 1.16 Village
+
+-   Village in ++ region.
+    -   Non-abandoned, plains/savanna/desert only.
+    -   Nothing else guaranteed in village. Get lucky or do cod strats.
+-   Ruined portal within 48 blocks of village center.
+    -   Surface ruined portals with lava only.
+-   Spawnpoint within 32 blocks of village or ruined portal.
+
+### 1.16 Temple
+
+-   Desert pyramid in ++ region.
+    -   Flint and steel craftable.
+    -   Pickaxe craftable (diamond or iron).
+    -   Bucket craftable.
+-   Ruined portal within 64 blocks of pyramid.
+    -   Surface ruined portals with lava only.
+-   Spawnpoint within 32 blocks of pyramid or ruined portal.
+-   Ravine within 80 blocks of pyramid (50 for OP version).
+
+### 1.15 Insomniac (not on leaderboard and it's kinda shit)
 
 -   Shipwreck in closest ++ region (0->128)
     -   diamond/iron tools craftable
@@ -50,9 +84,17 @@ Releases and some source code for ZigSeedGlitchless
 
 ### Filter IDS
 
-1. Regular 1.16 Filter
-2. OP 1.16 Filter
-3. 1.15 Filter
+1. 1.16 Mapless
+2. 1.16 Mapless (OP)
+3. 1.15 Insomniac
+4. 1.16 Village
+5. 1.16 Village (OP)
+6. 1.16 Temple
+7. 1.16 Temple (OP)
+8. 1.16 Shipwreck
+9. 1.16 Shipwreck (OP)
+
+Can be set in `config.json`.
 
 ## Source Code
 
