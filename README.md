@@ -68,7 +68,6 @@ Releases and some source code for ZigSeedGlitchless
 -   Ruined portal within 64 blocks of pyramid.
     -   Surface ruined portals with lava only.
 -   Spawnpoint within 32 blocks of pyramid or ruined portal.
--   Ravine within 80 blocks of pyramid (50 for OP version).
 
 ### 1.15 Insomniac (not on leaderboard and it's kinda shit)
 
