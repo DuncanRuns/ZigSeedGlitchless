@@ -78,7 +78,7 @@ fn checkLower48(seed: u64, settings: Settings) StructureSeedCheckResult {
         }
     }
     // Check loot
-    const loot = common.getRuinedPortalLoot(seed, rp_pos.x, rp_pos.z, common.RUINED_PORTAL_SALT_1_16);
+    var loot = common.getRuinedPortalLoot(seed, rp_pos.x, rp_pos.z, common.RUINED_PORTAL_SALT_1_16);
     if (loot.obsidian >= 10) loot.iron_nuggets += 27; // Reads stupidly but means that 10 obsidian can replace 27 iron nuggets (bucket)
     if (loot.iron_nuggets < 27) return FAIL_RESULT;
     if (loot.flint_and_steels < 1 and loot.fire_charges < 1 and !(loot.iron_nuggets >= 36 and loot.flint >= 1)) return FAIL_RESULT;
