@@ -92,7 +92,7 @@ fn checkLower48(seed: u64, settings: Settings) StructureSeedCheckResult {
         };
 
         const supply_loot = common.getShipwreckSupplyLoot(seed, supply_chest_pos.x, supply_chest_pos.z, common.SHIPWRECK_SALT_1_16, 1);
-        const food_val = supply_loot.wheat + supply_loot.carrots * 6;
+        const food_val = supply_loot.wheat + @as(u16, supply_loot.carrots) * 6;
         if (food_val < 30) {
             return FAIL_RESULT;
         }

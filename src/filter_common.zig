@@ -12,6 +12,7 @@ pub const SHIPWRECK_SALT_1_15: u32 = 30005;
 pub const SHIPWRECK_SALT_1_16: u32 = 40006;
 pub const LAVA_LAKE_SALT_1_15: u32 = 10001;
 pub const DESERT_LAVA_LAKE_SALT_1_16: u32 = 10000;
+pub const RUINED_PORTAL_SALT_1_16: u32 = 40005;
 
 pub const FindSeedResults = struct {
     seed: u64,
@@ -146,21 +147,21 @@ pub fn getIndexedLootSeed(seed: u64, block_x: c_int, block_z: c_int, salt: u32, 
 }
 
 const ShipwreckTreasureLoot = struct {
-    iron: i8,
-    diamonds: i8,
-    gold: i8,
-    emeralds: i8,
+    iron: u8,
+    diamonds: u8,
+    gold: u8,
+    emeralds: u8,
 };
 
 pub fn getShipwreckTreasureLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32, chest_num: u8, rng_trashing: u8) ShipwreckTreasureLoot {
     var r: u64 = 0;
     cubiomes.setSeed(&r, getIndexedLootSeed(seed, block_x, block_z, salt, chest_num, rng_trashing));
-    var iron: i8 = 0;
-    var iron_nuggets: i8 = 0;
-    var diamonds: i8 = 0;
-    var gold: i8 = 0;
-    var gold_nuggets: i8 = 0;
-    var emeralds: i8 = 0;
+    var iron: u8 = 0;
+    var iron_nuggets: u8 = 0;
+    var diamonds: u8 = 0;
+    var gold: u8 = 0;
+    var gold_nuggets: u8 = 0;
+    var emeralds: u8 = 0;
 
     // Pool 1 (w150): 3-6 uni rolls, w90 1-5 iron_ingot, w10 1-5 gold_ingot, w40 1-5 emerald, w5 1 diamond, w5 1 experience bottle
     {
@@ -169,11 +170,11 @@ pub fn getShipwreckTreasureLoot(seed: u64, block_x: c_int, block_z: c_int, salt:
         while (i < max) : (i += 1) {
             const choice = cubiomes.nextInt(&r, 150);
             if (choice < 90) {
-                iron += @truncate(cubiomes.nextInt(&r, 5) + 1);
+                iron += @intCast(cubiomes.nextInt(&r, 5) + 1);
             } else if (choice < 100) {
-                gold += @truncate(cubiomes.nextInt(&r, 5) + 1);
+                gold += @intCast(cubiomes.nextInt(&r, 5) + 1);
             } else if (choice < 140) {
-                emeralds += @truncate(cubiomes.nextInt(&r, 5) + 1);
+                emeralds += @intCast(cubiomes.nextInt(&r, 5) + 1);
             } else if (choice < 145) {
                 diamonds += 1;
             } // else 1 experience bottle
@@ -188,9 +189,9 @@ pub fn getShipwreckTreasureLoot(seed: u64, block_x: c_int, block_z: c_int, salt:
             const choice = cubiomes.nextInt(&r, 80);
             const amount = cubiomes.nextInt(&r, 10) + 1; // All entries in this pool are 1-10
             if (choice < 50) {
-                iron_nuggets += @truncate(amount);
+                iron_nuggets += @intCast(amount);
             } else if (choice < 70) {
-                gold_nuggets += @truncate(amount);
+                gold_nuggets += @intCast(amount);
             } // else amount lapis
         }
     }
@@ -203,21 +204,21 @@ pub fn getShipwreckTreasureLoot(seed: u64, block_x: c_int, block_z: c_int, salt:
 }
 
 const ShipwreckSupplyLoot = struct {
-    tnt: i8,
-    gunpowder: i8,
-    wheat: i16, // Can get up to 210 wheat so more space needed than i8
-    carrots: i8,
-    rotten_flesh: i16,
+    tnt: u8,
+    gunpowder: u8,
+    wheat: u16, // Can get up to 210 wheat so more space needed than i8
+    carrots: u8,
+    rotten_flesh: u16,
 };
 
 pub fn getShipwreckSupplyLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32, rng_trashing: u8) ShipwreckSupplyLoot {
     var r: u64 = 0;
     cubiomes.setSeed(&r, getLootSeed(seed, block_x, block_z, salt, rng_trashing)); // chest_num always 1
-    var tnt: i8 = 0;
-    var gunpowder: i8 = 0;
-    var wheat: i16 = 0;
-    var carrots: i8 = 0;
-    var rotten_flesh: i16 = 0;
+    var tnt: u8 = 0;
+    var gunpowder: u8 = 0;
+    var wheat: u16 = 0;
+    var carrots: u8 = 0;
+    var rotten_flesh: u16 = 0;
 
     // Only 1 Pool (w77) 3-10 uni rolls
     // w8 1-12 paper
@@ -246,10 +247,10 @@ pub fn getShipwreckSupplyLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u
             _ = cubiomes.nextInt(&r, 5);
         } else if (choice < 29) {
             // std.debug.print("Carrot\n", .{});
-            carrots += @truncate(cubiomes.nextInt(&r, 5) + 4);
+            carrots += @intCast(cubiomes.nextInt(&r, 5) + 4);
         } else if (choice < 36) {
             // std.debug.print("wheat\n", .{});
-            wheat += @truncate(cubiomes.nextInt(&r, 14) + 8);
+            wheat += @intCast(cubiomes.nextInt(&r, 14) + 8);
         } else if (choice < 46) {
             // std.debug.print("Stew\n", .{});
             // Discard effect calculation
@@ -259,16 +260,16 @@ pub fn getShipwreckSupplyLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u
             _ = cubiomes.nextInt(&r, 7);
         } else if (choice < 57) {
             // std.debug.print("Flesh\n", .{});
-            rotten_flesh += @truncate(cubiomes.nextInt(&r, 20) + 5);
+            rotten_flesh += @intCast(cubiomes.nextInt(&r, 20) + 5);
         } else if (choice < 61) {
             // std.debug.print("Pump/Bamb\n", .{});
             _ = cubiomes.nextInt(&r, 3);
         } else if (choice < 64) {
             // std.debug.print("Gunpowder\n", .{});
-            gunpowder += @truncate(cubiomes.nextInt(&r, 5) + 1);
+            gunpowder += @intCast(cubiomes.nextInt(&r, 5) + 1);
         } else if (choice < 65) {
             // std.debug.print("Tnt\n", .{});
-            tnt += @truncate(cubiomes.nextInt(&r, 2) + 1);
+            tnt += @intCast(cubiomes.nextInt(&r, 2) + 1);
         } else if (choice < 68) {
             // std.debug.print("Helmet\n", .{});
             _ = switch (cubiomes.nextInt(&r, 11)) {
@@ -304,21 +305,21 @@ pub fn getShipwreckSupplyLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u
 }
 
 const BuriedTreasureLoot = struct {
-    iron: i8,
-    tnt: i8,
-    diamonds: i8,
-    gold: i8,
-    emeralds: i8,
+    iron: u8,
+    tnt: u8,
+    diamonds: u8,
+    gold: u8,
+    emeralds: u8,
 };
 
 pub fn getBTLoot(seed: u64, chunk_x: c_int, chunk_z: c_int, salt: u32) BuriedTreasureLoot {
     var rand: u64 = 0;
     cubiomes.setSeed(&rand, getLootSeed(seed, chunk_x * 16, chunk_z * 16, salt, 0));
-    var iron: i8 = 0;
-    var tnt: i8 = 0;
-    var diamonds: i8 = 0;
-    var gold: i8 = 0;
-    var emeralds: i8 = 0;
+    var iron: u8 = 0;
+    var tnt: u8 = 0;
+    var diamonds: u8 = 0;
+    var gold: u8 = 0;
+    var emeralds: u8 = 0;
 
     // Pool 1 (no rng)
     // Pool 2: 5-8 uni rolls, w20 iron, w10 gold, w5 tnt
@@ -328,11 +329,11 @@ pub fn getBTLoot(seed: u64, chunk_x: c_int, chunk_z: c_int, salt: u32) BuriedTre
         while (i < max) : (i += 1) {
             const choice = cubiomes.nextInt(&rand, 35);
             if (choice < 20) {
-                iron += @truncate(cubiomes.nextInt(&rand, 4) + 1);
+                iron += @intCast(cubiomes.nextInt(&rand, 4) + 1);
             } else if (choice < 30) {
-                gold += @truncate(cubiomes.nextInt(&rand, 4) + 1);
+                gold += @intCast(cubiomes.nextInt(&rand, 4) + 1);
             } else {
-                tnt += @truncate(cubiomes.nextInt(&rand, 2) + 1);
+                tnt += @intCast(cubiomes.nextInt(&rand, 2) + 1);
             }
         }
     }
@@ -343,9 +344,9 @@ pub fn getBTLoot(seed: u64, chunk_x: c_int, chunk_z: c_int, salt: u32) BuriedTre
         while (i < max) : (i += 1) {
             const choice = cubiomes.nextInt(&rand, 15);
             if (choice < 5) {
-                emeralds += @truncate(cubiomes.nextInt(&rand, 5) + 4);
+                emeralds += @intCast(cubiomes.nextInt(&rand, 5) + 4);
             } else if (choice < 10) {
-                diamonds += @truncate(cubiomes.nextInt(&rand, 2) + 1);
+                diamonds += @intCast(cubiomes.nextInt(&rand, 2) + 1);
             } else {
                 _ = cubiomes.next(&rand, 31);
             }
@@ -374,10 +375,10 @@ pub fn getDesertPyramidChestSeeds(seed: u64, block_x: c_int, block_z: c_int, sal
 }
 
 const DesertTempleLoot = struct {
-    diamonds: i8 = 0,
-    gold: i8 = 0,
-    iron: i8 = 0,
-    enchanted_golden_apples: i8 = 0,
+    diamonds: u8 = 0,
+    gold: u8 = 0,
+    iron: u8 = 0,
+    enchanted_golden_apples: u8 = 0,
 };
 
 pub fn getDesertPyramidLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32) DesertTempleLoot {
@@ -417,11 +418,11 @@ pub fn getDesertPyramidSingleChestLoot(chest_seed: u64) DesertTempleLoot {
         while (i < max) : (i += 1) {
             const choice = cubiomes.nextInt(&rand, 232);
             if (choice < 5) {
-                loot.diamonds += @truncate(cubiomes.nextInt(&rand, 3) + 1);
+                loot.diamonds += @intCast(cubiomes.nextInt(&rand, 3) + 1);
             } else if (choice < 20) {
-                loot.iron += @truncate(cubiomes.nextInt(&rand, 5) + 1);
+                loot.iron += @intCast(cubiomes.nextInt(&rand, 5) + 1);
             } else if (choice < 35) {
-                loot.gold += @truncate(cubiomes.nextInt(&rand, 6) + 2);
+                loot.gold += @intCast(cubiomes.nextInt(&rand, 6) + 2);
             } else if (choice < 100) {
                 _ = cubiomes.nextInt(&rand, 3); // emerald, bone, spider_eye
             } else if (choice < 125) {
@@ -481,6 +482,218 @@ pub fn getDesertPyramidSingleChestLoot(chest_seed: u64) DesertTempleLoot {
             } else if (choice < 217) {
                 loot.enchanted_golden_apples += 1;
             } // else nothing
+        }
+    }
+    return loot;
+}
+
+const RuinedPortalLoot = struct {
+    obsidian: u8 = 0,
+    flint: u8 = 0,
+    iron_nuggets: u16 = 0,
+    flint_and_steels: u8 = 0,
+    fire_charges: u8 = 0,
+    looting: u2 = 0,
+};
+
+pub fn getRuinedPortalLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32) RuinedPortalLoot {
+    var rand: u64 = 0;
+    const loot_seed = getLootSeed(seed, block_x, block_z, salt, 0);
+    cubiomes.setSeed(&rand, loot_seed);
+
+    // 1 Pool 4-8 rolls
+    // w40 1-2 obsidian
+    // w40 1-4 flint
+    // w40 9-18 iron_nugget
+    // w40 flint_and_steel
+    // w40 fire_charge
+    // w15 golden_apple
+    // w15 4-24 gold_nugget
+    // w15 golden_sword, enchant_randomly
+    // w15 golden_axe, enchant_randomly
+    // w15 golden_hoe, enchant_randomly
+    // w15 golden_shovel, enchant_randomly
+    // w15 golden_pickaxe, enchant_randomly
+    // w15 golden_boots, enchant_randomly
+    // w15 golden_chestplate, enchant_randomly
+    // w15 golden_helmet, enchant_randomly
+    // w15 golden_leggings, enchant_randomly
+    // w5 4-12 glistering_melon_slice
+    // w5 golden_horse_armor
+    // w5 light_weighted_pressure_plate
+    // w5 4-12 golden_carrot
+    // w5 clock
+    // w5 2-8 gold_ingot
+    // w1 bell
+    // w1 enchanted_golden_apple
+    // w1 1-2 gold_block
+    // Total weight: 398
+
+    var loot: RuinedPortalLoot = .{};
+
+    const max = cubiomes.nextInt(&rand, 5) + 4;
+    var i: i32 = 0;
+    while (i < max) : (i += 1) {
+        const choice = cubiomes.nextInt(&rand, 398);
+
+        if (choice < 40) {
+            loot.obsidian += @intCast(cubiomes.nextInt(&rand, 2) + 1);
+        } else if (choice < 80) {
+            loot.flint += @intCast(cubiomes.nextInt(&rand, 4) + 1);
+        } else if (choice < 120) {
+            loot.iron_nuggets += @intCast(cubiomes.nextInt(&rand, 10) + 9);
+        } else if (choice < 160) {
+            loot.flint_and_steels += 1;
+        } else if (choice < 200) {
+            loot.fire_charges += 1;
+        } else if (choice < 215) {
+            // golden apple
+        } else if (choice < 230) {
+            _ = cubiomes.nextInt(&rand, 21);
+        } else if (choice < 245) {
+            // golden sword, enchant_randomly
+            // 0: minecraft:sharpness, 5
+            // 1: minecraft:smite, 5
+            // 2: minecraft:bane_of_arthropods, 5
+            // 3: minecraft:knockback, 2
+            // 4: minecraft:fire_aspect, 2
+            // 5: minecraft:looting, 3
+            // 6: minecraft:sweeping, 3
+            // 7: minecraft:unbreaking, 3
+            // 8: minecraft:mending, 1
+            // 9: minecraft:vanishing_curse, 1
+            const enchant = cubiomes.nextInt(&rand, 10);
+            const level = 1 + switch (enchant) {
+                3, 4 => cubiomes.nextInt(&rand, 2),
+                5, 6, 7 => cubiomes.nextInt(&rand, 3),
+                0, 1, 2 => cubiomes.nextInt(&rand, 5),
+                else => 0,
+            };
+            if (enchant == 5) loot.looting = @max(loot.looting, @as(u2, @intCast(level)));
+        } else if (choice < 260) {
+            // golden axe, enchant_randomly
+            // 0: minecraft:sharpness, 5
+            // 1: minecraft:smite, 5
+            // 2: minecraft:bane_of_arthropods, 5
+            // 3: minecraft:efficiency, 5
+            // 4: minecraft:silk_touch, 1
+            // 5: minecraft:unbreaking, 3
+            // 6: minecraft:fortune, 3
+            // 7: minecraft:mending, 1
+            // 8: minecraft:vanishing_curse, 1
+            const enchant = cubiomes.nextInt(&rand, 9);
+            _ = switch (enchant) {
+                5, 6 => cubiomes.nextInt(&rand, 3),
+                0, 1, 2, 3 => cubiomes.nextInt(&rand, 5),
+                else => 0,
+            };
+        } else if (choice < 305) {
+            // golden hoe/shovel/pickaxe, enchant_randomly
+            // 0: minecraft:efficiency, 5
+            // 1: minecraft:silk_touch, 1
+            // 2: minecraft:unbreaking, 3
+            // 3: minecraft:fortune, 3
+            // 4: minecraft:mending, 1
+            // 5: minecraft:vanishing_curse, 1
+            const enchant = cubiomes.nextInt(&rand, 6);
+            _ = switch (enchant) {
+                2, 3 => cubiomes.nextInt(&rand, 3),
+                0 => cubiomes.nextInt(&rand, 5),
+                else => 0,
+            };
+        } else if (choice < 320) {
+            // golden boots, enchant_randomly
+            // 0: minecraft:protection, 4
+            // 1: minecraft:fire_protection, 4
+            // 2: minecraft:feather_falling, 4
+            // 3: minecraft:blast_protection, 4
+            // 4: minecraft:projectile_protection, 4
+            // 5: minecraft:thorns, 3
+            // 6: minecraft:depth_strider, 3
+            // 7: minecraft:frost_walker, 2
+            // 8: minecraft:binding_curse, 1
+            // 9: minecraft:unbreaking, 3
+            // 10: minecraft:mending, 1
+            // 11: minecraft:vanishing_curse, 1
+            const enchant = cubiomes.nextInt(&rand, 12);
+            _ = switch (enchant) {
+                7 => cubiomes.nextInt(&rand, 2),
+                5, 6, 9 => cubiomes.nextInt(&rand, 3),
+                0, 1, 2, 3, 4 => cubiomes.nextInt(&rand, 4),
+                else => 0,
+            };
+        } else if (choice < 335) {
+            // golden chestplate, enchant_randomly
+            // 0: minecraft:protection, 4
+            // 1: minecraft:fire_protection, 4
+            // 2: minecraft:blast_protection, 4
+            // 3: minecraft:projectile_protection, 4
+            // 4: minecraft:thorns, 3
+            // 5: minecraft:binding_curse, 1
+            // 6: minecraft:unbreaking, 3
+            // 7: minecraft:mending, 1
+            // 8: minecraft:vanishing_curse, 1
+            const enchant = cubiomes.nextInt(&rand, 9);
+            _ = switch (enchant) {
+                4, 6 => cubiomes.nextInt(&rand, 3),
+                0, 1, 2, 3 => cubiomes.nextInt(&rand, 4),
+                else => 0,
+            };
+        } else if (choice < 350) {
+            // golden helmet, enchant_randomly
+            // 0: minecraft:protection, 4
+            // 1: minecraft:fire_protection, 4
+            // 2: minecraft:blast_protection, 4
+            // 3: minecraft:projectile_protection, 4
+            // 4: minecraft:respiration, 3
+            // 5: minecraft:aqua_affinity, 1
+            // 6: minecraft:thorns, 3
+            // 7: minecraft:binding_curse, 1
+            // 8: minecraft:unbreaking, 3
+            // 9: minecraft:mending, 1
+            // 10: minecraft:vanishing_curse, 1
+            const enchant = cubiomes.nextInt(&rand, 11);
+            _ = switch (enchant) {
+                4, 6, 8 => cubiomes.nextInt(&rand, 3),
+                0, 1, 2, 3 => cubiomes.nextInt(&rand, 4),
+                else => 0,
+            };
+        } else if (choice < 365) {
+            // golden leggings, enchant_randomly
+            // 0: minecraft:protection, 4
+            // 1: minecraft:fire_protection, 4
+            // 2: minecraft:blast_protection, 4
+            // 3: minecraft:projectile_protection, 4
+            // 4: minecraft:thorns, 3
+            // 5: minecraft:binding_curse, 1
+            // 6: minecraft:unbreaking, 3
+            // 7: minecraft:mending, 1
+            // 8: minecraft:vanishing_curse, 1
+            const enchant = cubiomes.nextInt(&rand, 9);
+            _ = switch (enchant) {
+                4, 6 => cubiomes.nextInt(&rand, 3),
+                0, 1, 2, 3 => cubiomes.nextInt(&rand, 4),
+                else => 0,
+            };
+        } else if (choice < 370) {
+            // glistering melon slices
+        } else if (choice < 375) {
+            // golden horse armor
+        } else if (choice < 380) {
+            // light weighted pressure plate
+        } else if (choice < 385) {
+            _ = cubiomes.nextInt(&rand, 9);
+        } else if (choice < 390) {
+            // clock
+        } else if (choice < 395) {
+            _ = cubiomes.nextInt(&rand, 7);
+        } else if (choice < 396) {
+            // bell
+        } else if (choice < 397) {
+            // enchanted golden apple
+        } else {
+            // 1-2 gold blocks
+            _ = cubiomes.nextInt(&rand, 2);
         }
     }
     return loot;

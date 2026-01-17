@@ -77,6 +77,10 @@ fn checkLower48(seed: u64, settings: Settings) StructureSeedCheckResult {
             else => return FAIL_RESULT,
         }
     }
+    // Check loot
+    const loot = common.getRuinedPortalLoot(seed, rp_pos.x, rp_pos.z, common.RUINED_PORTAL_SALT_1_16);
+    if (loot.iron_nuggets < 27) return FAIL_RESULT;
+    if (loot.flint_and_steels < 1 and loot.fire_charges < 1 and !(loot.iron_nuggets >= 36 and loot.flint >= 1)) return FAIL_RESULT;
 
     var generator: Generator = undefined;
     cubiomes.setupGenerator(&generator, cubiomes.MC_1_16_1, 0);
@@ -143,7 +147,7 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult, settings: Settings) boo
     }
 
     // Recheck rp variant
-    if (0 == cubiomes.getVariant(@ptrCast(&sv), cubiomes.Ruined_Portal, cubiomes.MC_1_16_1, seed, rp_pos.x, rp_pos.z, cubiomes.plains)) return false;
+    if (0 == cubiomes.getVariant(@ptrCast(&sv), cubiomes.Ruined_Portal, cubiomes.MC_1_16_1, seed, rp_pos.x, rp_pos.z, rp_biome)) return false;
 
     if ((sv.flags & (1 << 2)) != 0) return false;
     if ((sv.flags & (1 << 1)) == 0) {
@@ -178,10 +182,7 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult, settings: Settings) boo
 
     // Check spawn
     const spawn_pos: Pos = cubiomes.getSpawn(&g);
-    return (@abs(spawn_pos.x - main_pos.x) <= settings.spawn_dist and
-        @abs(spawn_pos.z - main_pos.z) <= settings.spawn_dist) or
-        (@abs(spawn_pos.x - rp_pos.x) <= settings.spawn_dist and
-        @abs(spawn_pos.z - rp_pos.z) <= settings.spawn_dist);
+    return (@abs(spawn_pos.x - main_pos.x) <= settings.spawn_dist and @abs(spawn_pos.z - main_pos.z) <= settings.spawn_dist) or (@abs(spawn_pos.x - rp_pos.x) <= settings.spawn_dist and @abs(spawn_pos.z - rp_pos.z) <= settings.spawn_dist);
 }
 
 fn findSeed(init_seed: u64, settings: Settings) FindSeedResults {
