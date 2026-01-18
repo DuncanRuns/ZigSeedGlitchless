@@ -69,7 +69,7 @@ fn checkLower48(seed: u64, settings: Settings) StructureSeedCheckResult {
     // Check underground
     if ((sv.flags & (1 << 2)) != 0) return FAIL_RESULT;
     // Check airpocket
-    if ((sv.flags & (1 << 3)) != 0) return FAIL_RESULT;
+    if ((sv.flags & (1 << 3)) == 0) return FAIL_RESULT;
     // Check giant
     if ((sv.flags & (1 << 1)) == 0) { // All giant portals have lava
         switch (sv.start) {

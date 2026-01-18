@@ -98,7 +98,7 @@ fn checkLower48(seed: u64, settings: Settings) StructureSeedCheckResult {
     // Check underground
     if ((sv.flags & (1 << 2)) != 0) return FAIL_RESULT;
     // Check airpocket
-    if ((sv.flags & (1 << 3)) != 0) return FAIL_RESULT;
+    if ((sv.flags & (1 << 3)) == 0) return FAIL_RESULT;
     // Check giant
     if ((sv.flags & (1 << 1)) == 0) { // All giant portals have lava
         switch (sv.start) {
@@ -204,7 +204,7 @@ fn checkSister(seed: u64, ssr: StructureSeedCheckResult, settings: Settings) boo
     return (@abs(spawn_pos.x - main_pos.x) <= settings.spawn_dist and
         @abs(spawn_pos.z - main_pos.z) <= settings.spawn_dist) or
         (@abs(spawn_pos.x - rp_pos.x) <= settings.spawn_dist and
-        @abs(spawn_pos.z - rp_pos.z) <= settings.spawn_dist);
+            @abs(spawn_pos.z - rp_pos.z) <= settings.spawn_dist);
 }
 
 fn findSeed(init_seed: u64, settings: Settings) FindSeedResults {
