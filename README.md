@@ -105,10 +105,12 @@ Releases and some source code for ZigSeedGlitchless
 3. 1.15 Insomniac
 4. 1.16 Village
 5. 1.16 Village (OP)
-6. 1.16 Temple
-7. 1.16 Temple (OP)
+6. 1.16 Desert Temple
+7. 1.16 Desert Temple (OP)
 8. 1.16 Shipwreck
 9. 1.16 Shipwreck (OP)
+10. 1.16 Jungle Temple
+11. 1.16 Jungle Temple (OP)
 
 Can be set in `config.json`.
 
