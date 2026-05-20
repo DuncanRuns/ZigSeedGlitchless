@@ -60,7 +60,7 @@ Releases and some source code for ZigSeedGlitchless
         - The rare case of 10 obsidian reduces the required iron nuggets by 27.
 - Spawnpoint within 32 blocks of village or ruined portal.
 
-### 1.16 Temple
+### 1.16 Desert Temple
 
 - Desert pyramid in ++ region.
     - Flint and steel craftable.
@@ -68,6 +68,22 @@ Releases and some source code for ZigSeedGlitchless
     - Bucket craftable.
 - Ruined portal within 64 blocks of pyramid.
     - Surface ruined portals with lava only.
+    - Cannot be in the same chunk as pyramid to prevent structure fighting.
+- Spawnpoint within 32 blocks of pyramid or ruined portal.
+
+### 1.16 Jungle Temple
+
+- Jungle pyramid in ++ region.
+- Ruined portal within 32 blocks of pyramid.
+    - Surface ruined portals with lava only.
+    - Cannot be in the same chunk as pyramid to prevent structure fighting.
+- Loot guaranteed in pyramid/portal.
+    - Flint and steel craftable, or fire charge or flint and steel in ruined portal.
+    - Pickaxe craftable (diamond or iron).
+    - Bucket craftable.
+    - Food from one or both structures.
+        - 16 or more flesh from the pyramid.
+        - Any amount of food from ruined portal (golden carrots, golden apple(s), god apple(s)).
 - Spawnpoint within 32 blocks of pyramid or ruined portal.
 
 ### 1.15 Insomniac (not on leaderboard and it's kinda shit)
