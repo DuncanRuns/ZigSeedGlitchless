@@ -5,7 +5,9 @@ const cubiomes = @import("cubiomes");
 const Pos = cubiomes.Pos;
 const Generator = cubiomes.Generator;
 
+// Values found by debugging in Biome.generateFeatureStep's setDecoratorSeed
 pub const DESERT_PYRAMID_SALT_1_16: u32 = 40003;
+pub const JUNGLE_PYRAMID_SALT_1_16: u32 = 40002;
 pub const BURIED_TREASURE_SALT_1_16: u32 = 30001;
 pub const BURIED_TREASURE_SALT_1_15: u32 = 20002;
 pub const SHIPWRECK_SALT_1_15: u32 = 30005;
@@ -518,13 +520,109 @@ pub fn getDesertPyramidSingleChestLoot(chest_seed: u64) DesertTempleLoot {
     return loot;
 }
 
+pub const JunglePyramidChestSeeds = struct {
+    chest1: u64,
+    chest2: u64,
+};
+
+pub fn getJunglePyramidChestSeeds(seed: u64, block_x: c_int, block_z: c_int, salt: u32) JunglePyramidChestSeeds {
+    var rand: u64 = 0;
+    cubiomes.setSeed(&rand, getDecoratorSeed(seed, block_x, block_z, salt));
+    cubiomes.skipNextN(&rand, 1511);
+    _ = cubiomes.nextLong(&rand);
+    _ = cubiomes.nextLong(&rand);
+    const c1: u64 = cubiomes.nextLong(&rand);
+    cubiomes.skipNextN(&rand, 11);
+    const c2: u64 = cubiomes.nextLong(&rand);
+    return .{
+        .chest1 = c1,
+        .chest2 = c2,
+    };
+}
+
+const JungleTempleLoot = struct {
+    diamonds: u8 = 0,
+    gold: u8 = 0,
+    iron: u8 = 0,
+    flesh: u8 = 0,
+};
+
+pub fn getJunglePyramidLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32) JungleTempleLoot {
+    const seeds = getJunglePyramidChestSeeds(seed, block_x, block_z, salt);
+    const c1: JungleTempleLoot = getJunglePyramidSingleChestLoot(seeds.chest1);
+    const c2: JungleTempleLoot = getJunglePyramidSingleChestLoot(seeds.chest2);
+    return .{
+        .diamonds = c1.diamonds + c2.diamonds,
+        .iron = c1.iron + c2.iron,
+        .gold = c1.gold + c2.gold,
+        .flesh = c1.flesh + c2.flesh,
+    };
+}
+
+pub fn getJunglePyramidSingleChestLoot(chest_seed: u64) JungleTempleLoot {
+    var rand: u64 = 0;
+    cubiomes.setSeed(&rand, chest_seed);
+    // Pool 1 (w88): 2-6 uni rolls
+    // w3 1-3 diamond
+    // w10 1-5 iron
+    // w15 2-7 gold
+    // w15 1-3 bamboo
+    // w2 1-3 emeralds
+    // w20 4-6 bones
+    // w16 3-7 flesh
+    // w3 saddle
+    // w1 iron horse armor
+    // w1 gold horse armor
+    // w1 diamond horse armor
+    // w1 enchanted book (complicated enchant_with_levels lvl 30 with treasure)
+
+    var loot: JungleTempleLoot = .{};
+    {
+        const max = nextCount(&rand, 2, 6);
+        var i: i32 = 0;
+        while (i < max) : (i += 1) {
+            const choice = cubiomes.nextInt(&rand, 88);
+            if (choice < 3) {
+                // 1-3 diamonds
+                loot.diamonds += @intCast(nextCount(&rand, 1, 3));
+            } else if (choice < 3 + 10) {
+                // 1-5 iron
+                loot.iron += @intCast(nextCount(&rand, 1, 5));
+            } else if (choice < 3 + 10 + 15) {
+                // 2-7 gold
+                loot.gold += @intCast(nextCount(&rand, 2, 7));
+            } else if (choice < 3 + 10 + 15 + 15 + 2) {
+                // 1-3 bamboo or emeralds
+                disposeNextCount(&rand, 1, 3);
+            } else if (choice < 3 + 10 + 15 + 15 + 2 + 20) {
+                // 4-6 bones
+                disposeNextCount(&rand, 4, 6);
+            } else if (choice < 3 + 10 + 15 + 15 + 2 + 20 + 16) {
+                // 3-7 flesh
+                loot.flesh += @intCast(nextCount(&rand, 3, 7));
+            } else if (choice < 3 + 10 + 15 + 15 + 2 + 20 + 16 + 3 + 1 + 1 + 1) {
+                // horse stuff
+                disposeNextCount(&rand, 3, 7);
+            } else {
+                // enchant book at level 30, quite complicated, and without comprehensive simulation, the rng state will
+                // be wrong, and thus we cannot trust results without the simulation, which I am not writing
+                // So just return loot early (unlucky!)
+                return loot;
+            }
+        }
+    }
+    return loot;
+}
+
 const RuinedPortalLoot = struct {
     obsidian: u8 = 0,
     flint: u8 = 0,
     iron_nuggets: u16 = 0,
     flint_and_steels: u8 = 0,
     fire_charges: u8 = 0,
-    looting: u2 = 0,
+    golden_apples: u4 = 0,
+    enchanted_golden_apples: u4 = 0,
+    golden_carrots: u8 = 0,
 };
 
 pub fn getRuinedPortalLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32) RuinedPortalLoot {
@@ -584,6 +682,7 @@ pub fn getRuinedPortalLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32)
             loot.fire_charges += 1;
         } else if (choice < 215) {
             // golden apple
+            loot.golden_apples += 1;
         } else if (choice < 230) {
             // 4-24 gold_nugget
             disposeNextCount(&rand, 4, 24);
@@ -606,7 +705,8 @@ pub fn getRuinedPortalLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32)
                 0, 1, 2 => cubiomes.nextInt(&rand, 5),
                 else => 0,
             };
-            if (enchant == 5) loot.looting = @max(loot.looting, @as(u2, @intCast(level)));
+            _ = level;
+            // if (enchant == 5) loot.looting = @max(loot.looting, @as(u2, @intCast(level)));
         } else if (choice < 260) {
             // golden axe, enchant_randomly
             // 0: minecraft:sharpness, 5
@@ -721,7 +821,7 @@ pub fn getRuinedPortalLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32)
             // light weighted pressure plate
         } else if (choice < 385) {
             // 4-12 golden_carrot
-            disposeNextCount(&rand, 4, 12);
+            loot.golden_carrots += @intCast(nextCount(&rand, 4, 12));
         } else if (choice < 390) {
             // clock
         } else if (choice < 395) {
@@ -731,6 +831,7 @@ pub fn getRuinedPortalLoot(seed: u64, block_x: c_int, block_z: c_int, salt: u32)
             // bell
         } else if (choice < 397) {
             // enchanted golden apple
+            loot.enchanted_golden_apples += 1;
         } else {
             // 1-2 gold blocks
             disposeNextCount(&rand, 1, 2);

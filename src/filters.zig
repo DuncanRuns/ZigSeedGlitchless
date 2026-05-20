@@ -9,10 +9,12 @@ pub fn getFilter(filter_code: u32) !Filter {
         3 => return @import("filter_1_15.zig").interface,
         4 => return @import("filter_1_16_village.zig").interface,
         5 => return @import("filter_1_16_village.zig").interface_overpowered,
-        6 => return @import("filter_1_16_temple.zig").interface,
-        7 => return @import("filter_1_16_temple.zig").interface_overpowered,
+        6 => return @import("filter_1_16_desert_temple.zig").interface,
+        7 => return @import("filter_1_16_desert_temple.zig").interface_overpowered,
         8 => return @import("filter_1_16_shipwreck.zig").interface,
         9 => return @import("filter_1_16_shipwreck.zig").interface_overpowered,
+        10 => return @import("filter_1_16_jungle_temple.zig").interface,
+        11 => return @import("filter_1_16_jungle_temple.zig").interface_overpowered,
         else => return error.FilterDoesNotExist,
     }
 }
